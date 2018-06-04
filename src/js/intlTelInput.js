@@ -191,6 +191,9 @@ Plugin.prototype = {
               this.countries[i].name = this.options.localizedCountries[iso];
           }
       }
+      this.countries = this.countries.sort(function(obj1, obj2){
+        return obj1.name.localeCompare(obj2.name);
+      });
   },
 
   // process the countryCodes map
@@ -386,7 +389,7 @@ Plugin.prototype = {
   // update hidden input on form submit
   _initHiddenInputListener: function() {
     var that = this;
-    
+
     var form = this.telInput.closest("form");
     if (form.length) {
       form.submit(function() {
