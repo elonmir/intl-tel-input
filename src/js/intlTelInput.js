@@ -22,6 +22,8 @@ var pluginName = "intlTelInput",
     hiddenInput: "",
     // initial country
     initialCountry: "",
+    // localized country names e.g. { 'de': 'Deutschland' }
+    localizedCountries: null,
     // don't insert international dial codes
     nationalMode: true,
     // display only these countries
@@ -34,8 +36,6 @@ var pluginName = "intlTelInput",
     separateDialCode: false,
     // specify the path to the libphonenumber script to enable validation/formatting
     utilsScript: "",
-    // default locale eg.: {'DE':'Deutschland'}
-    localizedCountries: {},
   },
   keys = {
     UP: 38,
@@ -147,8 +147,15 @@ Plugin.prototype = {
     // process the preferredCountries
     this._processPreferredCountries();
 
-    // translate countries according to locale object literal
-    this._translateCountriesByLocale();
+    // translate countries according to localizedCountries option
+    if (this.options.localizedCountries) {
+      this._translateCountriesByLocale();
+    }
+
+    // sort countries by name
+    if (this.options.onlyCountries.length || this.options.localizedCountries) {
+      this.countries.sort(this._countryNameSort);
+    }
   },
 
 
@@ -184,20 +191,21 @@ Plugin.prototype = {
     this.countries.sort(this._countrySort);
   },
 
-  // Sort countries by locale name
-  _countrySort: function compare(a,b) {
-    return a.name.localeCompare(b.name);
-  },
-
   // Translate Countries by object literal provided on config
   _translateCountriesByLocale: function() {
       for (var i = 0; i < this.countries.length; i++) {
-          var iso = this.countries[i].iso2.toUpperCase();
+          var iso = this.countries[i].iso2.toLowerCase();
           if (iso in this.options.localizedCountries) {
               this.countries[i].name = this.options.localizedCountries[iso];
           }
       }
   },
+
+  // sort by country name
+  _countryNameSort: function(a, b) {
+    return a.name.localeCompare(b.name);
+  },
+
 
   // process the countryCodes map
   _processCountryCodes: function() {
@@ -305,7 +313,7 @@ Plugin.prototype = {
       this.hiddenInput = $("<input>", {
         type: "hidden",
         name: this.options.hiddenInput,
-      }).insertBefore(this.telInput);
+      }).insertAfter(this.telInput);
     }
   },
 
@@ -392,7 +400,7 @@ Plugin.prototype = {
   // update hidden input on form submit
   _initHiddenInputListener: function() {
     var that = this;
-    
+
     var form = this.telInput.closest("form");
     if (form.length) {
       form.submit(function() {
